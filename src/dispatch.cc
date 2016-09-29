@@ -10,25 +10,39 @@
 
 using namespace std;
 
-
-
-
 struct string_pair {
     string first, second;
 };
 
-
-
 /* ---------------- split_two --------------------------------
  * Given a string, return the first and second parts, split by
- * a space
+ * a space. Is is guaranteed by the caller, that there are no leading
+ * white spaces.
  */
 static string_pair
 split_two (const string s)
 {
-    string_pair s_p;
-    string t;
-    /* leading blanks */
+
+    struct string_pair s_p = { "", ""};
+    {
+        unsigned i;
+        for (i = 0; s.length() && ! bool(isspace(s[i])); i++)
+            /* count */ ;
+        s_p.first  = (s.substr (0, i));
+        i++;
+        if (i < s.length())
+            s_p.second = (s.substr (i + 1));
+        else
+            cerr << "Looks like there is only one string here\n";
+    }
+    { /* There could be more spaces to remove */
+        unsigned i;
+        for (i = 0; i < s_p.second.length() && isspace (s[i]); i++)
+            ;
+        if (i)
+            s_p.second.erase (0,i);
+    }
+        
     return s_p;
 }
 
@@ -42,8 +56,8 @@ dispatch()
     for ( string s; n_getline(cin, s, '#', nl); ) {
         string_pair s_p;
         cout << "line "<<nl<< " is \""<< s<< "\"\n";
-//        s_p = split_two (s);
-
+        s_p = split_two (s);
+        cout << "I found \""<< s_p.first<< "\" and \""<< s_p.second<<"\"\n";
     }
 
     return EXIT_SUCCESS;
