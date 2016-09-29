@@ -4,15 +4,16 @@
 
 #include <iostream>
 #include <limits>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include <csignal>
+#include <csignal>  /* Only in debugging */
 
 #include "bust.hh"
 #include "param_entry.hh"
-
+#include "param_tbl.hh"
 using namespace std;
 
 /* ---------------- operator << ------------------------------
@@ -28,6 +29,7 @@ std::ostream& operator<<(std::ostream& out, const param_entry o) {
     default: bust_die ({__func__, "unknown data type\n"});
     }
 
+#   ifdef want_to_show_types
     if (1 == 1) {
         switch (o.this_t) {
         case param_entry::int_t:      out << " (int)";      break;
@@ -38,6 +40,7 @@ std::ostream& operator<<(std::ostream& out, const param_entry o) {
         default: bust_die ({__func__, "unknown data type\n"});
         }
     }
+#   endif /* want_to_show_types */
     return out;
 }
 
@@ -49,13 +52,12 @@ stob (const string &s)
 {
     string tmp = s;
     for (char &it : tmp)
-        it = std::tolower (it);
+        it = char (std::tolower (it));
     if (tmp == "0" || tmp == "false")
         return false;
-    else if ( tmp == "1" || tmp == "true")
+    if ( tmp == "1" || tmp == "true")
         return true;
-    else
-        throw runtime_error ("unable to make a bool from " + s + "\n");
+    throw runtime_error ("unable to make a bool from " + s + "\n");
 }
 
 /* ---------------- stou  ------------------------------------
@@ -85,9 +87,9 @@ void param_entry::set (const std::string &ss)
     case float_t:    set(stof(ss));                          break;
     case unsigned_t: set(stou(ss));                          break;
     case bool_t:     set(stob(ss));                          break;
-    case string_t:   s.shrink_to_fit();                      break;
-    case invalid_t:  throw logic_error ("unknown type");     break;
-    default:         throw logic_error ("stupid andrew");    break;
+    case string_t:   s = ss;  s.shrink_to_fit();             break;
+    case invalid_t:  throw logic_error ("unknown type");
+    default:         throw logic_error ("stupid andrew");
     }
 }
 
@@ -104,8 +106,8 @@ void param_entry::set (const int i)
         the_var.u = unsigned (i);
     }
 }
-
-
+/* ---------------- testing only -----------------------------
+ */
 #undef want_main
 #ifdef want_main
 int
