@@ -3,10 +3,9 @@
  * Check the interface to param_tbl
  */
 
+#include <csignal>
 #include <map>
 #include <iostream>
-
-#include <typeinfo>  /* only during debugging */
 
 #include "param_entry.hh"
 #include "param_tbl.hh"
@@ -24,8 +23,10 @@ main ()
     cout << "Now, get a parameter\n";
     param_entry &p_e = parameters["misc.compile_date"];
     cout << "I just read the compile date as "<< p_e<< "\n";
-    string s = parameters["misc.compile_date"];
-    cout << "and going via a temporary string gives.. "<< s<< endl;
+    {
+        string s = parameters["misc.compile_date"];
+        cout << "and going via a temporary string gives.. "<< s<< endl;
+    }
     cout << "after reading parameters, dump them: \n";
 
     parameters.dump (cout);
@@ -36,18 +37,25 @@ main ()
         int i = 4;
         parameters["misc.verbosity"] = i;
         typedef const char * c_c_p;
-        parameters["misc.compile_date"] = "this is a const char *";
-        // parameters.dump(cout);
-
-        // parameters["dynmc.temp"]  = "4";
-        // parameters["dynmc.nstep"] = "4294967297";
+        c_c_p junk = "this is a constant char*";
+        parameters["misc.compile_date"] = junk;
+        cout << "this should say "<<junk << parameters["misc.compile_date"]<< endl;
     } catch (runtime_error &e) {
         cerr << e.what() << "should stop\n";
     } catch (out_of_range &e) {
         cerr << e.what() << "Should stop\n";
     }
     cout << "setting a boolean\n";
-    parameters["misc.dryrun"] = "trUe";
+    {
+        string s = "trUe";
+        parameters["misc.dryrun"] = s;
+    }
+    cout << "setting a string from a const string";
+    {
+        const string t = "this_was a const string";
+        raise (SIGTRAP);
+        parameters["misc.compile_date"] = t;
+    }
     cout << "After setting..\n";
     parameters.dump (cout);
     int i = parameters["misc.verbosity"];
