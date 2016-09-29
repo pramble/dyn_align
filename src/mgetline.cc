@@ -24,7 +24,7 @@ static std::string
 rmv_white_start_end (std::string &s)
 {
     size_t i, j;
-    for (i = 0; i < s.length() && isspace(s[i]); i++)
+    for (i = 0; i < s.length() && bool (isspace(s[i])); i++)
         /* just count */;
 
     if (i)
