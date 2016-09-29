@@ -14,7 +14,7 @@ private:
     void ini_params();
     p_map::iterator find_and_throw(const std::string &s);
 public:
-    param_tbl () {ini_params();}
+    param_tbl () : parameters() {ini_params();}
     void set(const std::string &s, const std::string &val);
     void dump(std::ostream &of);
     param_entry & operator[](const std::string &s);
