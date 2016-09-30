@@ -1,0 +1,12 @@
+set misc.dryrun tRue
+set misc.compile_date this was set from the command file 
+2
+f1 This     is line 1
+F1
+F2
+2
+# just a comment
+4 is here
+   and i am five
+six  #has a comment
+  seven     has   more words and spaces
