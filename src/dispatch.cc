@@ -1,6 +1,7 @@
 /*
  * 27 Sep 2016
  */
+#include <csignal>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -14,23 +15,6 @@
 using namespace std;
 /* ---------------- structures -------------------------------
  */
-class action_base {
-public:
-    param_tbl *params;
-    virtual int action (const string s) {cout <<s;return 0;}
-    action_base(param_tbl *p): params (p) {}
-    virtual void nothing();
-    virtual ~action_base() = default;
-};
-void action_base::nothing() {} /* This quietens a compiler warning */
-
-class action_msg : public action_base{
-private:
-public:
-    int action (const string s);
-};
-int action_msg::action(const string s) {
-  cout << "msg: "<< s<<endl; return EXIT_SUCCESS;}
 
 struct string_pair {
     string first, second;
@@ -47,8 +31,8 @@ split_two (const string s)
     struct string_pair s_p = { "", ""};
     {
         unsigned i;
-        for (i = 0; s.length() && ! bool(isspace(s[i])); i++)
-            /* count */ ;
+        for ( i = 0; i < s.length() && (!bool(isspace(s[i]))) ; i++)
+            /* just count */;
         s_p.first  = s.substr (0, i);
         i++;
         if (i < s.length()) {
@@ -62,34 +46,103 @@ split_two (const string s)
     }
     return s_p;
 }
-int action_base::i_s = 77;
+
+typedef int gen_func (const string &to_do, string &ret_msg, param_tbl &params, void *misc_data);
+typedef gen_func * gen_func_p;
+
+/* ---------------- m_lower  ---------------------------------
+ * lower case from->to and return "to" so we can use it in
+ * function calls
+ */
+static string &
+m_lower (const string &from, string &to)
+{
+    to = from;
+    for (unsigned i = 0; i < to.length(); i++)
+        to[i] = char (tolower(to[i]));
+    return to;
+}
+
+static int
+f1 (const string &to_do, string &ret_msg, param_tbl &params, void *misc_data)
+{
+    cout << __func__ << " was called";
+    ret_msg = string(__func__) + " says " + to_do + "\n";
+    ret_msg += "compiled on " + string (params["misc.compile_date"]);
+    if (!misc_data) { cout << "";} /* stop compiler warnings */
+    return EXIT_SUCCESS;
+}
+
+
+static int
+f2 (const string &to_do, string &ret_msg, param_tbl &params, void *misc_data)
+{
+    cout << __func__ << " was called";
+    ret_msg = string(__func__) + " says " + to_do +"\n";
+    ret_msg += "compiled on " + string(params["misc.compile_date"]);
+    if (!misc_data) { cout << "";} /* stop compiler warnings */
+    return EXIT_FAILURE;
+}
+
+static int
+cmd_set (const string &to_do, string &ret_msg, param_tbl &params, void *misc_data)
+{
+    cout << "hello from "<< __func__ << "\n";
+    string_pair s_p = split_two (to_do);
+    if (misc_data)
+        ret_msg = "";
+    params[s_p.first] = s_p.second;
+    return EXIT_SUCCESS;
+}
+static int
+cmd_param_dump (const string &to_do, string &ret_msg, param_tbl &params, void *misc_data)
+{
+    cout << "hello from "<< __func__ << "\n";
+    if (misc_data ==  & to_do)
+        ret_msg = "";
+    params.dump(cout);
+    return EXIT_SUCCESS;
+}
+
+
 /* ---------------- dispatch ---------------------------------
  * This reads commands and does something with them.
  */
 static int
 dispatch()
 {
-    param_tbl pp;
-    
-    action_base a_b;
-    a_b.set_params (&pp);
+    param_tbl params;
 
-    action_msg a_m;
-
-    a_m.action("hello a_m");
-    
+    map <const string, gen_func_p> commands;
+    commands = {
+        { "f1",   &f1 },
+        { "f2",   &f2 },
+        { "set",  &cmd_set },
+        { "dump", &cmd_param_dump }
+    };
     unsigned nl = 0;
     for ( string s; n_getline(cin, s, '#', nl); ) {
-        string_pair s_p;
-        cout << "line "<<nl<< " is \""<< s<< "\"\n";
-        s_p = split_two (s);
-        if (! (s_p.first.length() && s_p.second.length())) {
-            cerr << "Only one word in "<< s<<endl;
-        } else {
-            cout << "I found \""<< s_p.first<< "\" and \""<< s_p.second<<"\"\n";
+        try {
+            string_pair s_p;
+            s_p = split_two (s);
+            string tmp, ret_msg;
+            auto p_cmmd = commands.find (m_lower (s_p.first, tmp));
+            if ( p_cmmd == commands.end()) {
+                throw runtime_error (s_p.first + " is not a valid command\n");
+            } else {
+                if (p_cmmd->second(s_p.second, ret_msg, params, nullptr) == EXIT_FAILURE) {
+                    cerr << ret_msg << '\n';
+                    return EXIT_FAILURE;
+                }
+            }
+        } catch (runtime_error &e) {
+            cerr << "Caught: "<< e.what();;
+            if (bool(params["misc.dryrun"]) == true)
+                cerr << "Continuing since misc.dryrun is true\n";
+            else
+                return EXIT_FAILURE;
         }
     }
-
     return EXIT_SUCCESS;
 }
 
