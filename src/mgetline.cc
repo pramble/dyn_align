@@ -20,20 +20,22 @@
  *  1. There are very few spaces to remove and
  *  2. Regex support is so messy amongst the different compilers I have tried.
  */
+
 static std::string
 rmv_white_start_end (std::string &s)
 {
-    size_t i, j;
-    for (i = 0; i < s.length() && bool (isspace(s[i])); i++)
-        /* just count */;
-
-    if (i)
-        s.erase(0, i);
-
-    j = s.length() - 1;
-
-    while (isspace(s[j]))
-        s.erase(j--,1);
+    {
+        size_t i;
+        for (i = 0; i < s.length() && bool (isspace(s[i])); i++)
+            /* just count */;        
+        if (i)
+            s.erase(0, i);
+    }
+    if (s.length() > 0) {
+        size_t j = s.length() - 1;
+        while (isspace(s[j]) )
+            s.erase(j--,1);
+    }
     return s;
 }
 
@@ -51,14 +53,16 @@ n_getline (std::istream& is, std::string& str, char cmmt, unsigned &nl)
         unsigned i;
         if (getline (is, str))
             nl++;
-        else
-            return is;
-        for (i = 0; i < str.length(); i++) /* delete after first */
+        else           /* Not sure why this works */
+            goto end;  /* but it detects end of file */
+        for (i = 0; i < str.length(); i++) /* Delete after first */
             if (str[i] == cmmt)            /* comment */
                 break;
         str.erase (i);
-        rmv_white_start_end (str);
+        rmv_white_start_end (str);  /* leading and trailing blanks */
     } while (str.length() == 0);
+
+end:
     return is;
 }
 
