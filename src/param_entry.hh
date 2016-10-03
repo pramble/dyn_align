@@ -60,6 +60,13 @@ public:
     const char *       operator =(const char *cp)        {set(cp); return cp;}
     std::string       &operator =(std::string &ss)       {set(ss); return ss;}
     const std::string &operator =(const std::string &ss) {set(ss); return ss;}
+
+    bool operator< (const int& rhs){ return this->the_var.i < rhs; }
+    bool operator< (const unsigned &rhs) { return this->the_var.u < rhs;}
+
+    bool operator> (const int& rhs)     { return rhs < this->the_var.i;}
+    bool operator> (const unsigned& rhs){ return rhs < this->the_var.u;}
+
 #pragma GCC diagnostic pop
     operator int()         { return the_var.i;} /* This funny overloading of  */
     operator float()       { return the_var.f;} /* the cast operator let's us */
